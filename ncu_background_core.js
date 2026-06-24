@@ -157,7 +157,7 @@ ${subQuestionsText}
         max_tokens: 1500
       };
 
-      if (apiProvider === "siliconflow") {
+      if (apiProvider === "siliconflow" || (apiUrl && apiUrl.includes("siliconflow"))) {
         requestBody.enable_thinking = false;
       }
 
