@@ -26,6 +26,9 @@
 5. **当前阅卷课程**：正在评阅的课程名称，用于优化 AI 评分口吻和角色设定（通常扩展会自动从页面检测并自动填入，无需手动填写，仅在需要手动重写时修改）。
 6. 点击 **“保存配置”**。
 
+> 🎁 **专属福利**:
+> 如果您尚未注册硅基流动，推荐点击 [专属邀请链接](https://cloud.siliconflow.cn/i/uvQthMIy) 注册，可立享 **16 元** 免费额度（足够免费阅卷数万次）。
+>
 > 💡 **硅基流动 (SiliconFlow) 平台快捷配置 (推荐使用支持 Vision 视觉能力的 Qwen3.6 MoE 模型)**:
 > * **API Provider**: 选择 `SiliconFlow (硅基流动)`，插件将自动填充默认 API 终点和模型名称：
 >   * **API URL**: `https://api.siliconflow.cn/v1/chat/completions`
