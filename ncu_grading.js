@@ -1460,6 +1460,33 @@ function ncuDetectQuestionTitle() {
     return "第三题";
 }
 
+function ncuDetectCourseName() {
+    const headerElements = Array.from(document.querySelectorAll('div, span, p, a, li, dd, h1, h2, h3, select, option')).filter(el => {
+        const rect = el.getBoundingClientRect();
+        return rect.top < 150;
+    });
+    for (const el of headerElements) {
+        const text = (el.innerText || el.textContent || "").trim();
+        const matchBook = text.match(/《([^》]+)》/);
+        if (matchBook) {
+            return matchBook[1];
+        }
+    }
+    for (const el of headerElements) {
+        const text = (el.innerText || el.textContent || "").trim();
+        if (text.includes('考试') || text.includes('阅卷') || text.includes('试卷')) {
+            const cleanText = text
+                .replace(/[\d\-学期学年期中期末阶段性模拟测验复习正规重考补考统一放假度]/g, '')
+                .replace(/(期期|期末|期中|考试|阅卷|试卷|课程|评价|管理|中心|平台|系统)/g, '')
+                .trim();
+            if (cleanText.length >= 2 && cleanText.length <= 15) {
+                return cleanText;
+            }
+        }
+    }
+    return "";
+}
+
 async function ncuGetCanvasBase64(canvas) {
     try {
         if (canvas.tagName === 'IMG') {
@@ -1617,6 +1644,7 @@ async function ncuStartGrading() {
 
         const descInput = document.querySelector('#ncu-main-q-desc');
         const mainQuestionDesc = descInput ? descInput.value.trim() : "";
+        const detectedCourse = ncuDetectCourseName();
 
         chrome.runtime.sendMessage({
             type: 'CALL_LLM_MARKING',
@@ -1625,7 +1653,8 @@ async function ncuStartGrading() {
                 questionTitle: currentQTitle || '阅卷题目',
                 totalMaxScore: totalMaxScore,
                 subQuestionsText: subQuestionsText,
-                mainQuestionDesc: mainQuestionDesc
+                mainQuestionDesc: mainQuestionDesc,
+                courseName: detectedCourse
             }
         }, async (response) => {
             btn.disabled = false;

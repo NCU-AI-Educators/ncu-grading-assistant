@@ -179,14 +179,13 @@ async function handleLLMMarkingRequest(request, sender, sendResponse) {
     const apiUrl = config.apiUrl || "http://192.168.8.28:8000/v1/chat/completions";
     const apiKey = config.apiKey || "vllm-local";
     const modelName = config.modelName || "Qwen/Qwen3.5-9B";
-    const courseName = config.courseName || "软件工程";
-
     const payload = request.payload;
     const base64Image = payload.base64Image;
     const questionTitle = payload.questionTitle;
     const totalMaxScore = payload.totalMaxScore;
     const subQuestionsText = payload.subQuestionsText;
     const mainQuestionDesc = payload.mainQuestionDesc || "";
+    const courseName = payload.courseName || config.courseName || "软件工程";
 
     const systemPrompt = `你是一位任教于大学【${courseName}】课程的资深教师。你需要对学生的答卷（图片形式）进行专业、公正且严格的批阅。
 你的主要职责是分析学生的作答图片，对比标准答案，对每个小题分别进行打分、点评，并定位答题区域的视觉中心坐标位置。`;
