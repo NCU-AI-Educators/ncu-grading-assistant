@@ -26,6 +26,12 @@
 5. **当前阅卷课程**：正在评阅的课程名称，用于优化 AI 评分口吻和角色设定（通常扩展会自动从页面检测并自动填入，无需手动填写，仅在需要手动重写时修改）。
 6. 点击 **“保存配置”**。
 
+> 💡 **硅基流动 (SiliconFlow) 平台配置示例 (使用 DeepSeek-V4-Pro)**:
+> * **API Provider**: `OpenAI / vLLM (Compatible)`
+> * **API URL**: `https://api.siliconflow.cn/v1/chat/completions`
+> * **API Key**: 填写您的硅基流动 API 密钥 (即 `sk-...`)
+> * **Model Name**: `deepseek-ai/DeepSeek-V4-Pro`
+
 ## 使用方法
 1. 登录南昌大学在线阅卷系统，进入阅卷评阅页面。
 2. 页面右下角会自动加载一个磨砂玻璃风格的“AI 阅卷助手”悬浮面板（可拖拽和收起）。
