@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AI 阅卷助手配置</title>
+  <style>
+    body { font-family: sans-serif; padding: 10px; width: 300px; }
+    .form-group { margin-bottom: 10px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; }
+    input[type="text"] { width: 100%; box-sizing: border-box; padding: 5px; }
+    select { width: 100%; box-sizing: border-box; padding: 5px; }
+    button { padding: 8px 12px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; width: 100%; }
+    button:hover { background: #0056b3; }
+    #status { color: green; font-size: 12px; display: block; text-align: center; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <div class="form-group">
+    <label for="api-provider">API Provider</label>
+    <select id="api-provider">
+      <option value="openai">OpenAI / vLLM (Compatible)</option>
+      <option value="gemini">Google Gemini</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="api-url">API URL (Base for Gemini, Full Endpoint for OpenAI)</label>
+    <input type="text" id="api-url" placeholder="http://192.168.8.28:8000/v1/chat/completions">
+  </div>
+  <div class="form-group">
+    <label for="api-key">API Key</label>
+    <input type="text" id="api-key" placeholder="vllm-local">
+  </div>
+  <div class="form-group">
+    <label for="model-name">Model Name</label>
+    <input type="text" id="model-name" placeholder="Qwen/Qwen3.5-9B">
+  </div>
+  <div class="form-group">
+    <label for="course-name">当前阅卷课程 (Course Name)</label>
+    <input type="text" id="course-name" placeholder="例如：软件工程、数据结构">
+  </div>
+  <button id="save-btn">保存配置</button>
+  <span id="status"></span>
+
+  <script src="popup.js"></script>
+</body>
+</html>

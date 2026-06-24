@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "南昌大学 AI 阅卷助手 (NCU AI Grading Assistant)",
+  "version": "1.0",
+  "description": "专为南昌大学在线阅卷平台定制的 AI 辅助阅卷工具，支持评语手绘涂鸦与分数自动录入。",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://yuejuan.ncu.edu.cn/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AI 阅卷助手配置"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://yuejuan.ncu.edu.cn/*"
+      ],
+      "all_frames": true,
+      "js": ["ncu_grading.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
