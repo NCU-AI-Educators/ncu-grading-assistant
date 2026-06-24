@@ -3,7 +3,7 @@
 这是一个专为南昌大学在线阅卷系统 (`yuejuan.ncu.edu.cn`) 打造的 Chrome/Edge 浏览器 AI 辅助阅卷扩展。它能够帮助教师通过大语言模型 Vision 能力自动识别并阅卷、智能绘制红色手绘评语与 ✓/✗/⍻ 状态印章，并且自动将小题得分回填并提交，大幅提高阅卷效率。
 
 ## 核心特性
-* 🤖 **AI 自动评分与点评**：自动将学生答卷画布转化为图片，通过 LLM API（如 OpenAI, Google Gemini 等）智能识别作答内容（包括手写文字、决策树、决策表等）并进行分析、打分和撰写精炼点评。
+* 🤖 **AI 自动评分与点评**：自动将学生答卷画布转化为图片，通过 LLM API（如 Qwen 系列视觉大模型、Google Gemini 等）智能识别作答内容（包括手写文字、决策树、决策表等）并进行分析、打分和撰写精炼点评。
 * 🎨 **手绘风格红色涂鸦**：自动切换画笔工具，直接在学生答卷画布（`.canvas-sketcher`）上书写纯红色的点评文本和实得分数。
 * 🎯 **位置定位与自动盖章**：根据 AI 检测的视觉中心，自动盖下 ✓、✗ 或 ⍻ 印章。
 * 📝 **确认与微调缓冲区**：AI 评阅后会首先弹出一个 Glassmorphism 磨砂玻璃风格的对话框。教师可对每个小题的实得分数、对错状态、批语内容进行任意微调修改，确认后再一键绘制到画布并保存。
@@ -19,18 +19,18 @@
 
 ## 配置与连接
 点击插件图标，在弹窗中配置大模型连接参数：
-1. **API Provider**：选择 API 提供商，支持 `OpenAI / vLLM (Compatible)`（兼容第三方 OpenAI 格式的 Vision 接口，如 Qwen, Claude, DeepSeek 等）或 `Google Gemini`。
+1. **API Provider**：选择 API 提供商，支持 `OpenAI / vLLM (Compatible)`、`SiliconFlow (硅基流动)`（内置了最新的视觉大模型默认参数）或 `Google Gemini`。
 2. **API URL**：填写大模型的 API 端点地址。
 3. **API Key**：填写您的大模型 API 密钥。
-4. **Model Name**：填写调用的 Vision 视觉大模型名称。
+4. **Model Name**：填写调用的 Vision 视觉大模型名称（支持视觉的多模态模型才能处理答卷图片）。
 5. **当前阅卷课程**：正在评阅的课程名称，用于优化 AI 评分口吻和角色设定（通常扩展会自动从页面检测并自动填入，无需手动填写，仅在需要手动重写时修改）。
 6. 点击 **“保存配置”**。
 
-> 💡 **硅基流动 (SiliconFlow) 平台配置示例 (使用 DeepSeek-V4-Pro)**:
-> * **API Provider**: `OpenAI / vLLM (Compatible)`
-> * **API URL**: `https://api.siliconflow.cn/v1/chat/completions`
-> * **API Key**: 填写您的硅基流动 API 密钥 (即 `sk-...`)
-> * **Model Name**: `deepseek-ai/DeepSeek-V4-Pro`
+> 💡 **硅基流动 (SiliconFlow) 平台快捷配置 (推荐使用支持 Vision 视觉能力的 Qwen3.6 MoE 模型)**:
+> * **API Provider**: 选择 `SiliconFlow (硅基流动)`，插件将自动填充默认 API 终点和模型名称：
+>   * **API URL**: `https://api.siliconflow.cn/v1/chat/completions`
+>   * **Model Name**: `Qwen/Qwen3.6-35B-A3B` （也可以根据需要修改为其他支持 Vision 的模型）
+> * **API Key**: 填入您的硅基流动 API 密钥 (`sk-...`)
 
 ## 使用方法
 1. 登录南昌大学在线阅卷系统，进入阅卷评阅页面。

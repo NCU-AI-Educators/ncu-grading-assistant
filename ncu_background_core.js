@@ -135,32 +135,39 @@ ${subQuestionsText}
       });
     } else {
       // OpenAI / vLLM compatible model with Vision
+      const requestBody = {
+        model: modelName,
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userMessage },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                  detail: "auto"
+                }
+              }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 1500
+      };
+
+      if (apiProvider === "siliconflow") {
+        requestBody.enable_thinking = false;
+      }
+
       response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-          model: modelName,
-          messages: [
-            { role: "system", content: systemPrompt },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: userMessage },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:image/jpeg;base64,${base64Image}`,
-                    detail: "auto"
-                  }
-                }
-              ]
-            }
-          ],
-          temperature: 0.1
-        })
+        body: JSON.stringify(requestBody)
       });
     }
 
@@ -190,6 +197,10 @@ ${subQuestionsText}
 
   } catch (e) {
     console.error("❌ [AI Marking Background Error]:", e);
-    sendResponse({ success: false, error: e.message });
+    let friendlyError = e.message;
+    if (friendlyError && (friendlyError.includes("Failed to fetch") || friendlyError.includes("fetch") || friendlyError.includes("NetworkError"))) {
+      friendlyError = `网络连接失败 (Failed to fetch)。\n请点击浏览器右上角“高校 AI 教务助手”插件图标，检查以下配置：\n1. API URL 是否正确且当前网络可访问 (当前配置为: ${apiUrl})\n2. API Key 是否已填入且有效\n3. 如果是本地/局域网服务，请确保服务已正常启动。`;
+    }
+    sendResponse({ success: false, error: friendlyError });
   }
 }

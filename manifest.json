@@ -8,7 +8,9 @@
     "scripting"
   ],
   "host_permissions": [
-    "*://yuejuan.ncu.edu.cn/*"
+    "*://yuejuan.ncu.edu.cn/*",
+    "http://*/*",
+    "https://*/*"
   ],
   "action": {
     "default_popup": "popup.html",

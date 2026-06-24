@@ -1511,27 +1511,72 @@ function ncuDetectCourseName() {
     return "";
 }
 
+function ncuResizeBase64Image(base64Str, maxSize = 1024) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            let origWidth = img.naturalWidth || img.width;
+            let origHeight = img.naturalHeight || img.height;
+            let targetWidth = origWidth;
+            let targetHeight = origHeight;
+            if (origWidth > maxSize || origHeight > maxSize) {
+                if (origWidth > origHeight) {
+                    targetHeight = Math.round((origHeight * maxSize) / origWidth);
+                    targetWidth = maxSize;
+                } else {
+                    targetWidth = Math.round((origWidth * maxSize) / origHeight);
+                    targetHeight = maxSize;
+                }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            resolve(dataUrl.split(',')[1]);
+        };
+        img.onerror = () => {
+            resolve(base64Str);
+        };
+        img.src = 'data:image/jpeg;base64,' + base64Str;
+    });
+}
+
 async function ncuGetCanvasBase64(canvas) {
     try {
-        if (canvas.tagName === 'IMG') {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.naturalWidth || canvas.width;
-            tempCanvas.height = canvas.naturalHeight || canvas.height;
-            const ctx = tempCanvas.getContext('2d');
-            ctx.drawImage(canvas, 0, 0);
-            const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.9);
-            return dataUrl.split(',')[1];
-        } else {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const ctx = tempCanvas.getContext('2d');
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-            ctx.drawImage(canvas, 0, 0);
-            const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.9);
-            return dataUrl.split(',')[1];
+        let origWidth = canvas.naturalWidth || canvas.width;
+        let origHeight = canvas.naturalHeight || canvas.height;
+        
+        const MAX_SIZE = 1024;
+        let targetWidth = origWidth;
+        let targetHeight = origHeight;
+        if (origWidth > MAX_SIZE || origHeight > MAX_SIZE) {
+            if (origWidth > origHeight) {
+                targetHeight = Math.round((origHeight * MAX_SIZE) / origWidth);
+                targetWidth = MAX_SIZE;
+            } else {
+                targetWidth = Math.round((origWidth * MAX_SIZE) / origHeight);
+                targetHeight = MAX_SIZE;
+            }
+            console.log(`[NCU Grading] Downscaling student answer image from ${origWidth}x${origHeight} to ${targetWidth}x${targetHeight}`);
         }
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = targetWidth;
+        tempCanvas.height = targetHeight;
+        const ctx = tempCanvas.getContext('2d');
+        
+        if (canvas.tagName === 'IMG') {
+            ctx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
+        } else {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, targetWidth, targetHeight);
+            ctx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
+        }
+        
+        const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.7);
+        return dataUrl.split(',')[1];
     } catch (e) {
         console.warn("[NCU Grading] Canvas direct toDataURL failed (CORS/Tainted).", e);
         const src = canvas.getAttribute('src');
@@ -1540,9 +1585,11 @@ async function ncuGetCanvasBase64(canvas) {
                 chrome.runtime.sendMessage({
                     type: 'FETCH_IMAGE_BASE64',
                     url: new URL(src, window.location.origin).href
-                }, response => {
-                    if (response && response.success) resolve(response.base64);
-                    else resolve(null);
+                }, async response => {
+                    if (response && response.success) {
+                        const resizedBase64 = await ncuResizeBase64Image(response.base64);
+                        resolve(resizedBase64);
+                    } else resolve(null);
                 });
             });
         }
