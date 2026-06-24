@@ -4,7 +4,8 @@
   "version": "1.0",
   "description": "专为南昌大学在线阅卷平台定制的 AI 辅助阅卷工具，支持评语手绘涂鸦与分数自动录入。",
   "permissions": [
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "*://yuejuan.ncu.edu.cn/*"
