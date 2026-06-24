@@ -2065,7 +2065,7 @@ function ncuShowReviewDialog(results, subQuestions, canvas, onConfirm) {
 // PAGE ROUTING INITIALIZATION BLOCK FOR NCU GRADING
 // =========================================================================
 if (window.location.hostname.includes('ncu.edu.cn')) {
-    if (window.location.pathname.includes('/personal/')) {
+    if (window.location.pathname.includes('/marking/personal/')) {
         ncuInit();
     }
 }
