@@ -450,8 +450,9 @@ function loadSubQuestionsConfig() {
     const key = `ncu_grading_${examId}_${currentQTitle}`;
     const descKey = `ncu_grading_desc_${examId}_${currentQTitle}`;
     chrome.storage.local.get([key, descKey], (data) => {
-        const config = data[key] || ncuGetDefaultConfig();
-        const mainDesc = data[descKey] !== undefined ? data[descKey] : ncuGetDefaultMainDesc();
+        const hasSavedConfig = data[key] !== undefined;
+        const config = hasSavedConfig ? data[key] : ncuGetDefaultConfig();
+        const mainDesc = data[descKey] !== undefined ? data[descKey] : (hasSavedConfig ? "" : ncuGetDefaultMainDesc());
 
         const descInput = document.querySelector('#ncu-main-q-desc');
         if (descInput) {
