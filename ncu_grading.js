@@ -2130,9 +2130,25 @@ async function ncuStartGrading() {
     const originalText = btn.innerText;
     btn.disabled = true;
     btn.style.background = '#909399';
-    btn.innerText = '⏳ 正在定位答题卡...';
+    btn.innerText = '⏳ 正在校验配置...';
 
     try {
+        const subQItems = document.querySelectorAll('.ncu-sub-item');
+        let hasAnyStandard = false;
+        subQItems.forEach(item => {
+            const answerInput = item.querySelector('.ncu-sub-answer');
+            if ((answerInput && answerInput.value.trim() !== "") || item.dataset.image) {
+                hasAnyStandard = true;
+            }
+        });
+        if (subQItems.length > 0 && !hasAnyStandard) {
+            alert("❌ 请至少为一个分题输入「评分标准文本」或上传「评分标准图片」后再开始智能阅卷！");
+            btn.disabled = false;
+            btn.style.background = 'linear-gradient(135deg, #0072ff, #00c6ff)';
+            btn.innerText = originalText;
+            return;
+        }
+
         const canvas = ncuFindMainCanvas();
         if (!canvas) {
             alert("❌ 未找到学生答卷画布，请确认页面加载完毕且试卷图片已显示。");

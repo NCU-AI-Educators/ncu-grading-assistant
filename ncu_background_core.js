@@ -105,19 +105,19 @@ ${subQuestionsText}
   "subQuestions": [
     {
       "id": "1",
-      "studentAnswerOCR": "3/2 mw^2 R^2",
-      "status": "incorrect",
-      "score": 0.0,
-      "comment": "系数错误。写成了3/2，应为3/4。",
+      "studentAnswerOCR": "[学生该小题作答的原始文字/公式转录结果]",
+      "status": "correct",
+      "score": 5.0,
+      "comment": "[针对学生该小题答题情况的简要中文评语]",
       "x": 45,
       "y": 30
     },
     {
       "id": "2",
-      "studentAnswerOCR": "decision tree logic",
-      "status": "correct",
-      "score": 5.0,
-      "comment": "决策树分支正确，符号标准。",
+      "studentAnswerOCR": "[学生该小题作答的原始文字/公式转录结果]",
+      "status": "incorrect",
+      "score": 0.0,
+      "comment": "[针对学生该小题答题情况的简要错误点评]",
       "x": 50,
       "y": 70
     }
