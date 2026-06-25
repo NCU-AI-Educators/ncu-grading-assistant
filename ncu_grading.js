@@ -1474,16 +1474,20 @@ async function ncuApplyMarkingSubQuestion(canvas, status, score, comment, x, y, 
 function ncuNormalizeQTitle(rawTitle) {
     if (!rawTitle) return "";
     
+    // 移除空白字符
     let cleanTitle = rawTitle.replace(/\s+/g, '').trim();
+    
+    // 统一将各类区间连接符（如 -、至、_）替换为标准波浪号 ~
+    cleanTitle = cleanTitle.replace(/[\-\_至]/g, '~');
     
     if (cleanTitle.startsWith('第') && cleanTitle.endsWith('题')) {
         return cleanTitle;
     }
     
-    const hasSpan = /[\-\~\_至\、\，\,]/.test(cleanTitle);
+    const hasSpan = /[\~\、\，\,]/.test(cleanTitle);
     
     if (hasSpan) {
-        const spanMatch = cleanTitle.match(/(?:第)?([一二三四五六七八九十\d\-\~\_至\、\，\,]+)(?:题)?/);
+        const spanMatch = cleanTitle.match(/(?:第)?([一二三四五六七八九十\d\~\、\，\,]+)(?:题)?/);
         if (spanMatch) {
             return `第${spanMatch[1]}题`;
         }
