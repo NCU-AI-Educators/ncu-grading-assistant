@@ -36,19 +36,31 @@ async function handleLLMMarkingRequest(request, sender, sendResponse) {
     const apiProvider = config.apiProvider || "openai";
     const apiUrl = config.apiUrl || "http://192.168.8.28:8000/v1/chat/completions";
     const apiKey = config.apiKey || "vllm-local";
-    const modelName = config.modelName || "Qwen/Qwen3.5-9B";
-
-    const payload = request.payload;
+    const modelName = config.modelName || "Qwen/Qwen3.5-9B";    const payload = request.payload;
     const base64Image = payload.base64Image;
     const questionTitle = payload.questionTitle;
     const totalMaxScore = payload.totalMaxScore;
     const subQuestionsText = payload.subQuestionsText;
     const mainQuestionDesc = payload.mainQuestionDesc || "";
     const courseName = payload.courseName || config.courseName || "软件工程";
+    const subQuestions = payload.subQuestions || [];
+
+    // 找出所有带有标准答案图的小题图片
+    const answerImages = [];
+    subQuestions.forEach(sq => {
+        if (sq.answerImage) {
+            // 剔除 base64 协议头
+            const base64Clean = sq.answerImage.replace(/^data:image\/\w+;base64,/, "");
+            answerImages.push({
+                id: sq.id,
+                base64: base64Clean
+            });
+        }
+    });
 
     const systemPrompt = `你是一位任教于大学【${courseName}】课程的资深教师。你需要对学生的答卷（图片形式）进行专业、公正且严格的批阅。
-你的主要职责是分析学生的作答图片，对比标准答案，对每个小题分别进行评分、点评。
-【填空题与公式题核心判分准则】：填空题与公式填空具有客观唯一性。学生的作答必须与参考答案完全等价。若有任何字母缺失、系数写错（例如漏写 3/4 ）、指数不对（例如 w^2 写成 w ）、或手写符号错误，一律属于错误，**必须直接判定为 "incorrect" 且得分必须直接给 0 分，绝对禁止给出 "partial"（部分正确）或任何折算分数**！唯一的例外是乘法交换律，即如果作答仅仅是因子乘积顺序不同（例如参考答案为 3/4*m*R^2*w^2，学生写为 m*w^2*R^2*3/4 ），应判定为 "correct" 并给满分。`;
+    你的主要职责是分析学生的作答图片，对比标准答案，对每个小题分别进行评分、点评。
+    【填空题与公式题核心判分准则】：填空题与公式填空具有客观唯一性。学生的作答必须与参考答案完全等价。若有任何字母缺失、系数写错（例如漏写 3/4 ）、指数不对（例如 w^2 写成 w ）、或手写符号错误，一律属于错误，**必须直接判定为 "incorrect" 且得分必须直接给 0 分，绝对禁止给出 "partial"（部分正确）或任何折算分数**！唯一的例外是乘法交换律，即如果作答仅仅是因子乘积顺序不同（例如参考答案为 3/4*m*R^2*w^2，学生写为 m*w^2*R^2*3/4 ），应判定为 "correct" 并给满分。`;
 
     let userMessage = `
 请扮演资深教师批阅以下学生的答题图片。这道题是【${questionTitle}】，总满分为【${totalMaxScore}】分。
@@ -61,7 +73,19 @@ async function handleLLMMarkingRequest(request, sender, sendResponse) {
     userMessage += `
 【小题配置与参考标准答案】：
 ${subQuestionsText}
+`;
 
+    if (answerImages.length > 0) {
+        userMessage += `\n【重要：关于多图输入与标准答案图】\n`;
+        userMessage += `你总共会接收到 ${1 + answerImages.length} 张图片：\n`;
+        userMessage += `- 第一张图片（图片1）是【学生的答卷图片】；\n`;
+        answerImages.forEach((img, idx) => {
+            userMessage += `- 第 ${idx + 2} 张图片（图片${idx + 2}）是【小题第${img.id}题的参考标准答案图】。\n`;
+        });
+        userMessage += `评分时，请先仔细提取并分析对应的标准答案图（图片2及以后）所展示的标准表达式、公式步骤或图表，然后与学生答卷（图片1）中对应小题的作答内容进行比对。对于有标准答案图的小题，其评分标准以图片展示的答案为准，忽略文本评分标准。\n`;
+    }
+
+    userMessage += `
 【任务要求】：
 1. 认真审读学生的答题图片（可能包含手写解答文字、决策树图、决策表等）。**注意，学生答小题的顺序可能与出题配置不一致，且作答区域可能左右、上下或错落分布。请在整张图片中全局检索各小题对应的实际作答内容，并建立正确关联。**
 2. 进行【客观转录】：在评分前，你必须首先客观、原封不动地将图片中学生针对该小题的实际手写字迹转录为文本（填入 "studentAnswerOCR" 字段）。转录时**必须仅看图片，绝对禁止参考标准答案进行任何“脑补”或强行靠拢**。例如：若图片中学生手写分母清晰写为 \`2\`（如 \`3/2\`），你必须客观转录为 \`3/2\`，严禁转录为 \`3/4\`！若字母写得像 \`1\` 或是 \`l\`，必须客观转录为 \`1\` 或 \`l\`，严禁脑补为 \`R\`。
@@ -105,16 +129,30 @@ ${subQuestionsText}
     logInfo(`📦 [AI Marking] Payload Model: ${modelName}`);
 
     let response;
-    const imagePart = {
-      inlineData: {
-        mimeType: "image/jpeg",
-        data: base64Image
-      }
-    };
 
     if (apiProvider === "gemini") {
       const baseUrl = apiUrl.replace(/\/v1beta.*$/, '').replace(/\/$/, '');
       const geminiUrl = `${baseUrl}/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+      const geminiParts = [{ text: userMessage }];
+      
+      // 第一张：学生作答图片
+      geminiParts.push({
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: base64Image
+        }
+      });
+
+      // 后置：标准答案图片
+      answerImages.forEach(img => {
+        geminiParts.push({
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: img.base64
+          }
+        });
+      });
 
       const geminiPayload = {
         systemInstruction: {
@@ -123,10 +161,7 @@ ${subQuestionsText}
         contents: [
           {
             role: "user",
-            parts: [
-              { text: userMessage },
-              imagePart
-            ]
+            parts: geminiParts
           }
         ],
         generationConfig: {
@@ -143,22 +178,35 @@ ${subQuestionsText}
       });
     } else {
       // OpenAI / vLLM compatible model with Vision
+      const userContent = [{ type: "text", text: userMessage }];
+      
+      // 第一张：学生作答图片
+      userContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:image/jpeg;base64,${base64Image}`,
+          detail: "auto"
+        }
+      });
+
+      // 后置：标准答案图片
+      answerImages.forEach(img => {
+        userContent.push({
+          type: "image_url",
+          image_url: {
+            url: `data:image/jpeg;base64,${img.base64}`,
+            detail: "auto"
+          }
+        });
+      });
+
       const requestBody = {
         model: modelName,
         messages: [
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: [
-              { type: "text", text: userMessage },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                  detail: "auto"
-                }
-              }
-            ]
+            content: userContent
           }
         ],
         temperature: 0.1,
@@ -179,7 +227,7 @@ ${subQuestionsText}
       });
     }
 
-    if (!response.ok) {
+if (!response.ok) {
       const errText = await response.text().catch(() => "");
       throw new Error(`API responded with HTTP Status ${response.status}: ${errText}`);
     }

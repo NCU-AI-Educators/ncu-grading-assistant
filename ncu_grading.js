@@ -253,6 +253,145 @@ function ncuInjectGradingPanel() {
       .ncu-remove-btn:hover {
           text-decoration: underline;
       }
+      .ncu-image-upload-wrapper {
+          margin-top: 8px;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+      }
+      .ncu-upload-zone {
+          border: 1px dashed rgba(255, 255, 255, 0.15);
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 8px;
+          padding: 10px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 70px;
+          text-align: center;
+      }
+      .ncu-upload-zone:hover {
+          background: rgba(0, 198, 255, 0.04);
+          border-color: #00c6ff;
+      }
+      .ncu-upload-zone:focus-within {
+          outline: none;
+          background: rgba(0, 198, 255, 0.06);
+          border-color: #00c6ff !important;
+          box-shadow: 0 0 8px rgba(0, 198, 255, 0.25);
+      }
+      .ncu-upload-placeholder {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          user-select: none;
+      }
+      .ncu-upload-icon {
+          color: rgba(255, 255, 255, 0.3);
+          transition: color 0.2s, transform 0.2s;
+      }
+      .ncu-upload-zone:hover .ncu-upload-icon {
+          color: #00c6ff;
+          transform: translateY(-1px);
+      }
+      .ncu-upload-text-main {
+          font-size: 11px;
+          font-weight: 600;
+          color: #e2e8f0;
+          transition: color 0.2s;
+      }
+      .ncu-upload-zone:hover .ncu-upload-text-main {
+          color: #00c6ff;
+      }
+      .ncu-upload-text-sub {
+          font-size: 9px;
+          color: #718096;
+      }
+      .ncu-upload-zone.ncu-dragover {
+          background: rgba(0, 198, 255, 0.08);
+          border-color: #00c6ff;
+          border-style: solid;
+          transform: scale(1.01);
+      }
+      .ncu-image-preview-container {
+          margin-top: 4px;
+          position: relative;
+          width: 100%;
+          border-radius: 8px;
+          overflow: hidden;
+          background: #0f141c;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          aspect-ratio: 16/9;
+          max-height: 100px;
+      }
+      .ncu-image-preview {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          transition: transform 0.3s;
+      }
+      .ncu-image-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(2px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+      }
+      .ncu-image-preview-container:hover .ncu-image-overlay {
+          opacity: 1;
+      }
+      .ncu-image-preview-container:hover .ncu-image-preview {
+          transform: scale(1.03);
+      }
+      .ncu-image-remove-btn {
+          background: #f56c6c;
+          border: none;
+          color: white;
+          padding: 5px 10px;
+          border-radius: 5px;
+          font-size: 10px;
+          font-weight: bold;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          transition: all 0.2s;
+          box-shadow: 0 2px 6px rgba(245, 108, 108, 0.3);
+      }
+      .ncu-image-remove-btn:hover {
+          background: #ff7878;
+          transform: scale(1.05);
+      }
+      .ncu-image-remove-btn:active {
+          transform: scale(0.95);
+      }
+      .ncu-textarea-toggle {
+          font-size: 10px;
+          color: #00c6ff;
+          cursor: pointer;
+          display: none;
+          align-items: center;
+          gap: 2px;
+          user-select: none;
+          transition: opacity 0.2s;
+      }
+      .ncu-textarea-toggle:hover {
+          opacity: 0.8;
+      }
     `;
     const styleEl = document.createElement('style');
     styleEl.innerText = css;
@@ -382,6 +521,7 @@ function ncuAddSubQuestionElement(container, data) {
     const item = document.createElement('div');
     item.className = 'ncu-sub-item';
     item.dataset.id = data.id;
+    item.dataset.image = data.answerImage || "";
 
     item.innerHTML = `
       <div class="ncu-sub-item-header">
@@ -392,9 +532,196 @@ function ncuAddSubQuestionElement(container, data) {
           <span class="ncu-ai-label" style="margin-bottom: 0;">分值:</span>
           <input type="number" class="ncu-sub-max-score ncu-ai-input" style="width: 50px;" value="${data.maxScore}">
       </div>
-      <span class="ncu-ai-label">评分标准:</span>
-      <textarea class="ncu-sub-answer ncu-ai-textarea" placeholder="输入该小题评分标准...">${data.answer}</textarea>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span class="ncu-ai-label" style="margin-bottom: 0;">评分标准 (文本):</span>
+          <span class="ncu-textarea-toggle" title="展开/收缩文本输入框">
+              <span class="toggle-text">展开</span>
+              <svg class="toggle-icon" viewBox="0 0 24 24" width="12" height="12" style="transition: transform 0.2s;">
+                  <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+              </svg>
+          </span>
+      </div>
+      <textarea class="ncu-sub-answer ncu-ai-textarea" placeholder="输入该小题评分标准文本...">${data.answer || ""}</textarea>
+      
+      <div class="ncu-image-upload-wrapper">
+          <span class="ncu-ai-label" style="display:inline-block; margin-bottom:6px; font-size:11px;">评分标准 (图片/截图):</span>
+          
+          <div class="ncu-upload-zone" tabindex="0" title="点击激活后直接按 Ctrl+V 粘贴，或拖拽图片、点击“选择文件”上传">
+              <div class="ncu-upload-placeholder">
+                  <svg class="ncu-upload-icon" viewBox="0 0 24 24" width="20" height="20" style="margin-bottom: 2px;">
+                      <path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                  </svg>
+                  <div class="ncu-upload-text-main">
+                      拖拽图片至此，或 <span class="ncu-upload-link" style="color: #00c6ff; text-decoration: underline; cursor: pointer;">选择文件</span>
+                  </div>
+                  <div class="ncu-upload-text-sub">支持直接 Ctrl+V 粘贴</div>
+              </div>
+              <input type="file" class="ncu-image-file-input" accept="image/*" style="display:none;">
+          </div>
+          
+          <div class="ncu-image-preview-container" style="display:none;">
+              <img class="ncu-image-preview">
+              <div class="ncu-image-overlay">
+                  <button class="ncu-image-remove-btn" title="删除图片">
+                      <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right: 4px;">
+                          <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                      </svg>
+                      <span>删除图片</span>
+                  </button>
+              </div>
+          </div>
+      </div>
     `;
+
+    const uploadZone = item.querySelector('.ncu-upload-zone');
+    const fileInput = item.querySelector('.ncu-image-file-input');
+    const previewContainer = item.querySelector('.ncu-image-preview-container');
+    const previewImg = item.querySelector('.ncu-image-preview');
+    const removeBtn = item.querySelector('.ncu-image-remove-btn');
+    const textarea = item.querySelector('.ncu-sub-answer');
+
+    const toggleBtn = item.querySelector('.ncu-textarea-toggle');
+    const toggleText = toggleBtn.querySelector('.toggle-text');
+    const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+
+    // 辅助函数：根据当前数据状态自动同步文本框显示
+    const updateTextareaVisibility = (isInitializing = false) => {
+        const hasImg = !!item.dataset.image;
+        const hasText = textarea.value.trim() !== "";
+
+        if (!hasImg) {
+            textarea.style.display = 'block';
+            toggleBtn.style.display = 'none';
+        } else {
+            toggleBtn.style.display = 'flex';
+            if (isInitializing) {
+                if (!hasText) {
+                    textarea.style.display = 'none';
+                    toggleText.innerText = '展开';
+                    toggleIcon.style.transform = 'rotate(0deg)';
+                } else {
+                    textarea.style.display = 'block';
+                    toggleText.innerText = '收缩';
+                    toggleIcon.style.transform = 'rotate(180deg)';
+                }
+            }
+        }
+    };
+
+    toggleBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const isHidden = textarea.style.display === 'none';
+        if (isHidden) {
+            textarea.style.display = 'block';
+            toggleText.innerText = '收缩';
+            toggleIcon.style.transform = 'rotate(180deg)';
+        } else {
+            textarea.style.display = 'none';
+            toggleText.innerText = '展开';
+            toggleIcon.style.transform = 'rotate(0deg)';
+        }
+    };
+
+    // 辅助函数：载入图片 Base64 并显示预览
+    const loadImgBase64 = (base64Data, shouldSave = true) => {
+        item.dataset.image = base64Data;
+        previewImg.src = base64Data;
+        previewContainer.style.display = 'flex';
+        uploadZone.style.display = 'none';
+        if (shouldSave) {
+            ncuSaveConfig();
+        }
+        updateTextareaVisibility(true);
+    };
+
+    // 初始化回填
+    if (data.answerImage) {
+        loadImgBase64(data.answerImage, false);
+    } else {
+        previewContainer.style.display = 'none';
+        uploadZone.style.display = 'flex';
+    }
+    updateTextareaVisibility(true);
+
+    const uploadLink = item.querySelector('.ncu-upload-link');
+
+    uploadLink.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fileInput.click();
+    };
+
+    uploadZone.onclick = (e) => {
+        if (e.target === uploadLink || e.target === fileInput) return;
+        e.preventDefault();
+        uploadZone.focus();
+    };
+
+    fileInput.onchange = () => {
+        if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                loadImgBase64(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    removeBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        item.dataset.image = "";
+        previewImg.src = "";
+        previewContainer.style.display = 'none';
+        uploadZone.style.display = 'flex';
+        fileInput.value = "";
+        ncuSaveConfig();
+        updateTextareaVisibility(true);
+    };
+
+    // 拖拽事件处理
+    uploadZone.ondragover = (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('ncu-dragover');
+    };
+
+    uploadZone.ondragleave = (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('ncu-dragover');
+    };
+
+    uploadZone.ondrop = (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('ncu-dragover');
+        const files = e.dataTransfer.files;
+        if (files && files[0] && files[0].type.startsWith('image/')) {
+            const file = files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                loadImgBase64(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // 粘贴事件处理：支持在整个小题卡片区域内直接粘贴截图
+    item.onpaste = (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    loadImgBase64(event.target.result);
+                };
+                reader.readAsDataURL(blob);
+                e.preventDefault(); // 阻止把图片当作字符/二进制流粘贴进输入框
+                break;
+            }
+        }
+    };
 
     item.querySelector('.ncu-remove-btn').onclick = () => {
         item.remove();
@@ -408,7 +735,7 @@ function ncuAddSubQuestionElement(container, data) {
     };
 
     item.querySelector('.ncu-sub-max-score').oninput = ncuSaveConfig;
-    item.querySelector('.ncu-sub-answer').oninput = ncuSaveConfig;
+    textarea.oninput = ncuSaveConfig;
 
     container.appendChild(item);
 }
@@ -426,7 +753,8 @@ function ncuSaveConfig() {
             subQuestions.push({
                 id: id,
                 maxScore: parseFloat(maxScoreInput.value) || 0,
-                answer: answerInput.value
+                answer: answerInput.value,
+                answerImage: item.dataset.image || ""
             });
         }
     });
@@ -1832,7 +2160,8 @@ async function ncuStartGrading() {
                 subQuestions.push({
                     id: id,
                     maxScore: parseFloat(maxScoreInput.value) || 0,
-                    answer: answerInput.value.trim()
+                    answer: answerInput.value.trim(),
+                    answerImage: item.dataset.image || ""
                 });
             }
         });
@@ -1864,7 +2193,8 @@ async function ncuStartGrading() {
                 totalMaxScore: totalMaxScore,
                 subQuestionsText: subQuestionsText,
                 mainQuestionDesc: mainQuestionDesc,
-                courseName: detectedCourse
+                courseName: detectedCourse,
+                subQuestions: subQuestions
             }
         }, async (response) => {
             btn.disabled = false;
