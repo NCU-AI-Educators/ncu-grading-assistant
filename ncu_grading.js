@@ -1473,10 +1473,27 @@ async function ncuApplyMarkingSubQuestion(canvas, status, score, comment, x, y, 
 
 function ncuNormalizeQTitle(rawTitle) {
     if (!rawTitle) return "";
-    const numMatch = rawTitle.match(/([一二三四五六七八九十\d]+)/);
-    if (!numMatch) return rawTitle;
     
-    let numStr = numMatch[1].trim();
+    let cleanTitle = rawTitle.replace(/\s+/g, '').trim();
+    
+    if (cleanTitle.startsWith('第') && cleanTitle.endsWith('题')) {
+        return cleanTitle;
+    }
+    
+    const hasSpan = /[\-\~\_至\、\，\,]/.test(cleanTitle);
+    
+    if (hasSpan) {
+        const spanMatch = cleanTitle.match(/(?:第)?([一二三四五六七八九十\d\-\~\_至\、\，\,]+)(?:题)?/);
+        if (spanMatch) {
+            return `第${spanMatch[1]}题`;
+        }
+        return `第${cleanTitle}题`;
+    }
+    
+    const numMatch = cleanTitle.match(/([原一二三四五六七八九十\d]+)/) || cleanTitle.match(/([一二三四五六七八九十\d]+)/);
+    if (!numMatch) return cleanTitle;
+    
+    let numStr = numMatch[1];
     const numMap = {
         '1': '一', '2': '二', '3': '三', '4': '四', '5': '五',
         '6': '六', '7': '七', '8': '八', '9': '九', '10': '十'
@@ -1495,11 +1512,11 @@ function ncuDetectQuestionTitle() {
     });
     
     const patterns = [
-        /(第\s*[一二三四五六七八九十\d]+\s*题)/,
-        /题号[：:\s]*([一二三四五六七八九十\d]+)/,
-        /当前(?:题|题目)[：:\s]*([一二三四五六七八九十\d]+)/,
-        /^(?:大题)?[：:\s]*([一二三四五六七八九十\d]+)[\.、题]/,
-        /Question\s*(\d+)/i
+        /(第\s*[一二三四五六七八九十\d\-\~\_至\s\、\，\,]+\s*题)/,
+        /题号[：:\s]*([一二三四五六七八九十\d\-\~\_至\s\、\，\,]+)/,
+        /当前(?:题|题目)[：:\s]*([一二三四五六七八九十\d\-\~\_至\s\、\，\,]+)/,
+        /^(?:大题)?[：:\s]*([一二三四五六七八九十\d\-\~\_至\s\、\，\,]+)[\.、题]/,
+        /Question\s*([a-z\d\-\~\_至\s\、\，\,]+)/i
     ];
     
     for (const pattern of patterns) {
