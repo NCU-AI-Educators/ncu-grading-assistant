@@ -349,8 +349,8 @@ function ncuInjectGradingPanel() {
             }
 
             const qTitle = ncuDetectQuestionTitle();
-            panel.querySelector('#ncu-detected-q').innerText = qTitle || '第三题';
-            currentQTitle = qTitle;
+            panel.querySelector('#ncu-detected-q').innerText = qTitle || '未检测到题号';
+            currentQTitle = qTitle || '未检测到题号';
             loadSubQuestionsConfig();
         }
     };
@@ -1471,17 +1471,68 @@ async function ncuApplyMarkingSubQuestion(canvas, status, score, comment, x, y, 
     }
 }
 
-function ncuDetectQuestionTitle() {
-    const headerElements = Array.from(document.querySelectorAll('div, span, p, a, li, dd, select, option')).filter(el => {
-        const rect = el.getBoundingClientRect();
-        return rect.top < 150 && rect.left < window.innerWidth * 0.4;
-    });
-    for (const el of headerElements) {
-        const text = (el.innerText || el.textContent || "").trim();
-        const match = text.match(/(第[一二三四五六七八九十]+题)/);
-        if (match) return match[1];
+function ncuNormalizeQTitle(rawTitle) {
+    if (!rawTitle) return "";
+    const numMatch = rawTitle.match(/([一二三四五六七八九十\d]+)/);
+    if (!numMatch) return rawTitle;
+    
+    let numStr = numMatch[1].trim();
+    const numMap = {
+        '1': '一', '2': '二', '3': '三', '4': '四', '5': '五',
+        '6': '六', '7': '七', '8': '八', '9': '九', '10': '十'
+    };
+    if (numMap[numStr]) {
+        numStr = numMap[numStr];
     }
-    return "第三题";
+    return `第${numStr}题`;
+}
+
+function ncuDetectQuestionTitle() {
+    const candidates = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6, select, option, div, span, p, td, th, li, .title, .active'));
+    const upperElements = candidates.filter(el => {
+        const rect = el.getBoundingClientRect();
+        return rect.top < 250 && rect.height > 0 && rect.width > 0;
+    });
+    
+    const patterns = [
+        /(第\s*[一二三四五六七八九十\d]+\s*题)/,
+        /题号[：:\s]*([一二三四五六七八九十\d]+)/,
+        /当前(?:题|题目)[：:\s]*([一二三四五六七八九十\d]+)/,
+        /^(?:大题)?[：:\s]*([一二三四五六七八九十\d]+)[\.、题]/,
+        /Question\s*(\d+)/i
+    ];
+    
+    for (const pattern of patterns) {
+        for (const el of upperElements) {
+            const text = (el.innerText || el.textContent || "").trim();
+            const match = text.match(pattern);
+            if (match) {
+                return ncuNormalizeQTitle(match[1]);
+            }
+        }
+    }
+    
+    for (const pattern of patterns) {
+        for (const el of candidates) {
+            const rect = el.getBoundingClientRect();
+            if (rect.height === 0) continue;
+            const text = (el.innerText || el.textContent || "").trim();
+            const match = text.match(pattern);
+            if (match) {
+                return ncuNormalizeQTitle(match[1]);
+            }
+        }
+    }
+    
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const qIdFromUrl = urlParams.get('questionId') || urlParams.get('qId') || urlParams.get('questionNum') || urlParams.get('qorder');
+        if (qIdFromUrl) {
+            return ncuNormalizeQTitle(qIdFromUrl);
+        }
+    } catch (e) {}
+
+    return "";
 }
 
 function ncuDetectCourseName() {
