@@ -544,7 +544,15 @@ function ncuAddSubQuestionElement(container, data) {
       <textarea class="ncu-sub-answer ncu-ai-textarea" placeholder="输入该小题评分标准文本...">${data.answer || ""}</textarea>
       
       <div class="ncu-image-upload-wrapper">
-          <span class="ncu-ai-label" style="display:inline-block; margin-bottom:6px; font-size:11px;">评分标准 (图片/截图):</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="ncu-ai-label" style="margin-bottom: 0; font-size: 11px;">评分标准 (图片/截图):</span>
+              <span class="ncu-image-toggle" title="展开/收缩图片区域" style="display: none; align-items: center; gap: 2px;">
+                  <span class="toggle-text">添加图片</span>
+                  <svg class="toggle-icon" viewBox="0 0 24 24" width="12" height="12" style="transition: transform 0.2s;">
+                      <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                  </svg>
+              </span>
+          </div>
           
           <div class="ncu-upload-zone" tabindex="0" title="点击激活后直接按 Ctrl+V 粘贴，或拖拽图片、点击“选择文件”上传">
               <div class="ncu-upload-placeholder">
@@ -584,6 +592,10 @@ function ncuAddSubQuestionElement(container, data) {
     const toggleText = toggleBtn.querySelector('.toggle-text');
     const toggleIcon = toggleBtn.querySelector('.toggle-icon');
 
+    const imageToggleBtn = item.querySelector('.ncu-image-toggle');
+    const imageToggleText = imageToggleBtn.querySelector('.toggle-text');
+    const imageToggleIcon = imageToggleBtn.querySelector('.toggle-icon');
+
     // 辅助函数：根据当前数据状态自动同步文本框显示
     const updateTextareaVisibility = (isInitializing = false) => {
         const hasImg = !!item.dataset.image;
@@ -597,12 +609,41 @@ function ncuAddSubQuestionElement(container, data) {
             if (isInitializing) {
                 if (!hasText) {
                     textarea.style.display = 'none';
-                    toggleText.innerText = '展开';
+                    toggleText.textContent = '展开';
                     toggleIcon.style.transform = 'rotate(0deg)';
                 } else {
                     textarea.style.display = 'block';
-                    toggleText.innerText = '收缩';
+                    toggleText.textContent = '收缩';
                     toggleIcon.style.transform = 'rotate(180deg)';
+                }
+            }
+        }
+    };
+
+    // 辅助函数：根据当前数据状态自动同步图片区域显示
+    const updateImageZoneVisibility = (isInitializing = false) => {
+        const hasImg = !!item.dataset.image;
+        const hasText = textarea.value.trim() !== "";
+
+        if (hasImg) {
+            previewContainer.style.display = 'flex';
+            uploadZone.style.display = 'none';
+            imageToggleBtn.style.display = 'none';
+        } else {
+            previewContainer.style.display = 'none';
+            if (!hasText) {
+                uploadZone.style.display = 'flex';
+                imageToggleBtn.style.display = 'none';
+            } else {
+                imageToggleBtn.style.display = 'flex';
+                if (isInitializing) {
+                    uploadZone.style.display = 'none';
+                    imageToggleText.textContent = '添加图片';
+                    imageToggleIcon.innerHTML = '<path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>';
+                } else {
+                    uploadZone.style.display = 'flex';
+                    imageToggleText.textContent = '收缩';
+                    imageToggleIcon.innerHTML = '<path fill="currentColor" d="M19 13H5v-2h14v2z"/>';
                 }
             }
         }
@@ -614,12 +655,27 @@ function ncuAddSubQuestionElement(container, data) {
         const isHidden = textarea.style.display === 'none';
         if (isHidden) {
             textarea.style.display = 'block';
-            toggleText.innerText = '收缩';
+            toggleText.textContent = '收缩';
             toggleIcon.style.transform = 'rotate(180deg)';
         } else {
             textarea.style.display = 'none';
-            toggleText.innerText = '展开';
+            toggleText.textContent = '展开';
             toggleIcon.style.transform = 'rotate(0deg)';
+        }
+    };
+
+    imageToggleBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const isHidden = uploadZone.style.display === 'none';
+        if (isHidden) {
+            uploadZone.style.display = 'flex';
+            imageToggleText.textContent = '收缩';
+            imageToggleIcon.innerHTML = '<path fill="currentColor" d="M19 13H5v-2h14v2z"/>';
+        } else {
+            uploadZone.style.display = 'none';
+            imageToggleText.textContent = '添加图片';
+            imageToggleIcon.innerHTML = '<path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>';
         }
     };
 
@@ -633,6 +689,7 @@ function ncuAddSubQuestionElement(container, data) {
             ncuSaveConfig();
         }
         updateTextareaVisibility(true);
+        updateImageZoneVisibility(false);
     };
 
     // 初始化回填
@@ -643,6 +700,7 @@ function ncuAddSubQuestionElement(container, data) {
         uploadZone.style.display = 'flex';
     }
     updateTextareaVisibility(true);
+    updateImageZoneVisibility(true);
 
     const uploadLink = item.querySelector('.ncu-upload-link');
 
@@ -679,6 +737,7 @@ function ncuAddSubQuestionElement(container, data) {
         fileInput.value = "";
         ncuSaveConfig();
         updateTextareaVisibility(true);
+        updateImageZoneVisibility(false);
     };
 
     // 拖拽事件处理
@@ -729,7 +788,7 @@ function ncuAddSubQuestionElement(container, data) {
         items.forEach((it, idx) => {
             const newId = String(idx + 1);
             it.dataset.id = newId;
-            it.querySelector('.ncu-sub-item-header span').innerText = `第${newId}小题`;
+            it.querySelector('.ncu-sub-item-header span').textContent = `第${newId}小题`;
         });
         ncuSaveConfig();
     };
