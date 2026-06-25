@@ -1471,6 +1471,76 @@ async function ncuApplyMarkingSubQuestion(canvas, status, score, comment, x, y, 
     }
 }
 
+function ncuNormalizeSubIdToNumber(subId) {
+    if (!subId) return null;
+    const str = String(subId).trim();
+    const num = parseInt(str, 10);
+    if (!isNaN(num)) return num;
+    
+    const chineseNumMap = {
+        '一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
+        '六': 6, '七': 7, '八': 8, '九': 9, '十': 10
+    };
+    if (chineseNumMap[str]) {
+        return chineseNumMap[str];
+    }
+    
+    const match = str.match(/\d+/);
+    if (match) {
+        return parseInt(match[0], 10);
+    }
+    
+    const zhMatch = str.match(/[一二三四五六七八九十]/);
+    if (zhMatch && chineseNumMap[zhMatch[0]]) {
+        return chineseNumMap[zhMatch[0]];
+    }
+    
+    return null;
+}
+
+function ncuFillSubQuestionScores(editedResults, totalScore) {
+    const subMarkingInputs = Array.from(document.querySelectorAll('input[id^="txt_marking_"]')).filter(inp => {
+        const id = inp.id;
+        const isSubInput = id !== 'txt_marking_all' && /txt_marking_\d+/.test(id);
+        const rect = inp.getBoundingClientRect();
+        return isSubInput && rect.width > 0 && rect.height > 0 && !inp.closest('#ncu-ai-grading-panel');
+    });
+    
+    const isMultiSubMarking = subMarkingInputs.length > 1;
+    
+    if (isMultiSubMarking) {
+        console.log(`[NCU Grading] Detected multi-sub-question scoring. Filling each sub-input...`);
+        let filledCount = 0;
+        for (const result of editedResults) {
+            const num = ncuNormalizeSubIdToNumber(result.id);
+            if (num !== null) {
+                const subInput = document.getElementById(`txt_marking_${num}`) || 
+                                 subMarkingInputs.find(inp => inp.id.endsWith(`_${num}`));
+                if (subInput) {
+                    ncuFillInputValue(subInput, String(result.score));
+                    filledCount++;
+                    console.log(`[NCU Grading] Filled sub-question ${result.id} (index ${num}) with score ${result.score}`);
+                } else {
+                    console.warn(`[NCU Grading] Input txt_marking_${num} NOT found for sub-question ${result.id}`);
+                }
+            } else {
+                console.warn(`[NCU Grading] Could not resolve numeric ID for sub-question ID: ${result.id}`);
+            }
+        }
+        
+        if (filledCount === 0) {
+            alert(`⚠️ 检测到多小题打分框，但未能成功自动填入分数。请手动在右侧填入各小题分数。`);
+        }
+        return true;
+    } else {
+        const scoreFilled = ncuSetTotalScore(totalScore);
+        if (!scoreFilled) {
+            alert(`⚠️ 已完成图画批注，但未能在页面右侧找到打分框输入。请手动填入总得分: ${totalScore} 分`);
+        }
+        return scoreFilled;
+    }
+}
+
 function ncuNormalizeQTitle(rawTitle) {
     if (!rawTitle) return "";
     
@@ -1838,12 +1908,9 @@ async function ncuStartGrading() {
                         await new Promise(r => setTimeout(r, 300));
                     }
 
-                    // 3. 填入计算后的总得分
+                    // 3. 填入计算后的得分
                     console.log(`[NCU Grading] Final confirmed total score: ${calculatedTotalScore}`);
-                    const scoreFilled = ncuSetTotalScore(calculatedTotalScore);
-                    if (!scoreFilled) {
-                        alert(`⚠️ 已完成图画批注，但未能在页面右侧找到打分框输入。请手动填入总得分: ${calculatedTotalScore} 分`);
-                    }
+                    ncuFillSubQuestionScores(editedResults, calculatedTotalScore);
                 } catch (err) {
                     console.error("Error applying review modifications:", err);
                     alert("写入批阅修改时发生错误: " + err.message);
