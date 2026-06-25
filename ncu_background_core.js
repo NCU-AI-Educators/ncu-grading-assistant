@@ -42,6 +42,7 @@ async function handleLLMMarkingRequest(request, sender, sendResponse) {
     const totalMaxScore = payload.totalMaxScore;
     const subQuestionsText = payload.subQuestionsText;
     const mainQuestionDesc = payload.mainQuestionDesc || "";
+    const mainQuestionImage = payload.mainQuestionImage || "";
     const courseName = payload.courseName || config.courseName || "软件工程";
     const subQuestions = payload.subQuestions || [];
 
@@ -58,6 +59,16 @@ async function handleLLMMarkingRequest(request, sender, sendResponse) {
         }
     });
 
+    let cleanMainQuestionImage = "";
+    let mainQuestionImageMime = "image/jpeg";
+    if (mainQuestionImage) {
+        cleanMainQuestionImage = mainQuestionImage.replace(/^data:image\/\w+;base64,/, "");
+        const mimeMatch = mainQuestionImage.match(/^data:(image\/\w+);base64,/);
+        if (mimeMatch) {
+            mainQuestionImageMime = mimeMatch[1];
+        }
+    }
+
     const systemPrompt = `你是一位任教于大学【${courseName}】课程的资深教师。你需要对学生的答卷（图片形式）进行专业、公正且严格的批阅。
     你的主要职责是分析学生的作答图片，对比标准答案，对每个小题分别进行评分、点评。
     【填空题与公式题核心判分准则】：填空题与公式填空具有客观唯一性。学生的作答必须与参考答案完全等价。若有任何字母缺失、系数写错（例如漏写 3/4 ）、指数不对（例如 w^2 写成 w ）、或手写符号错误，一律属于错误，**必须直接判定为 "incorrect" 且得分必须直接给 0 分，绝对禁止给出 "partial"（部分正确）或任何折算分数**！唯一的例外是乘法交换律，即如果作答仅仅是因子乘积顺序不同（例如参考答案为 3/4*m*R^2*w^2，学生写为 m*w^2*R^2*3/4 ），应判定为 "correct" 并给满分。`;
@@ -70,19 +81,30 @@ async function handleLLMMarkingRequest(request, sender, sendResponse) {
         userMessage += `\n【大题整体背景题干与业务规则】：\n${mainQuestionDesc}\n`;
     }
 
+    if (cleanMainQuestionImage) {
+        userMessage += `\n【重要：大题背景题干图片说明】\n本大题的背景题干中包含一张图片（多图输入中的【大题的背景题干图片】），请仔细结合大题背景题干文字与该图片进行理解与评分。\n`;
+    }
+
     userMessage += `
 【小题配置与参考标准答案】：
 ${subQuestionsText}
 `;
 
-    if (answerImages.length > 0) {
-        userMessage += `\n【重要：关于多图输入与标准答案图】\n`;
-        userMessage += `你总共会接收到 ${1 + answerImages.length} 张图片：\n`;
-        userMessage += `- 第一张图片（图片1）是【学生的答卷图片】；\n`;
-        answerImages.forEach((img, idx) => {
-            userMessage += `- 第 ${idx + 2} 张图片（图片${idx + 2}）是【小题第${img.id}题的参考标准答案图】。\n`;
+    const totalImagesCount = 1 + (cleanMainQuestionImage ? 1 : 0) + answerImages.length;
+    if (totalImagesCount > 1) {
+        userMessage += `\n【重要：关于多图输入与图像序号说明】\n`;
+        userMessage += `你总共会接收到 ${totalImagesCount} 张图片：\n`;
+        userMessage += `- 第 1 张图片（图片1）是【学生的答卷图片】；\n`;
+        let imgIdx = 2;
+        if (cleanMainQuestionImage) {
+            userMessage += `- 第 ${imgIdx} 张图片（图片${imgIdx}）是【大题的背景题干图片】；\n`;
+            imgIdx++;
+        }
+        answerImages.forEach(img => {
+            userMessage += `- 第 ${imgIdx} 张图片（图片${imgIdx}）是【小题第${img.id}题的参考标准答案图】；\n`;
+            imgIdx++;
         });
-        userMessage += `评分时，请先仔细提取并分析对应的标准答案图（图片2及以后）所展示的标准表达式、公式步骤或图表，然后与学生答卷（图片1）中对应小题的作答内容进行比对。对于有标准答案图的小题，其评分标准以图片展示的答案为准，忽略文本评分标准。\n`;
+        userMessage += `评分时，请先仔细结合大题的背景题干图片（若有）以及各个小题的参考标准答案图（若有），然后再与学生答卷（图片1）中对应小题的作答内容进行比对。对于有标准答案图的小题，其评分标准以图片展示的答案为准，忽略文本评分标准。\n`;
     }
 
     userMessage += `
@@ -144,6 +166,16 @@ ${subQuestionsText}
         }
       });
 
+      // 第二张（可选）：大题背景题干图片
+      if (cleanMainQuestionImage) {
+        geminiParts.push({
+          inlineData: {
+            mimeType: mainQuestionImageMime,
+            data: cleanMainQuestionImage
+          }
+        });
+      }
+
       // 后置：标准答案图片
       answerImages.forEach(img => {
         geminiParts.push({
@@ -188,6 +220,17 @@ ${subQuestionsText}
           detail: "auto"
         }
       });
+
+      // 第二张（可选）：大题背景题干图片
+      if (cleanMainQuestionImage) {
+        userContent.push({
+          type: "image_url",
+          image_url: {
+            url: mainQuestionImage,
+            detail: "auto"
+          }
+        });
+      }
 
       // 后置：标准答案图片
       answerImages.forEach(img => {

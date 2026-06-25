@@ -430,9 +430,54 @@ function ncuInjectGradingPanel() {
           </div>
       </div>
       
-      <div class="ncu-ai-form-group">
-          <span class="ncu-ai-label">大题背景题干/业务规则说明：</span>
+      <div class="ncu-ai-form-group" id="ncu-main-q-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span class="ncu-ai-label" style="margin-bottom: 0;">大题背景题干/业务规则说明 (文本):</span>
+              <span class="ncu-textarea-toggle" id="ncu-main-textarea-toggle" title="展开/收缩文本输入框" style="display: none; align-items: center; gap: 2px;">
+                  <span class="toggle-text">展开</span>
+                  <svg class="toggle-icon" viewBox="0 0 24 24" width="12" height="12" style="transition: transform 0.2s;">
+                      <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                  </svg>
+              </span>
+          </div>
           <textarea class="ncu-main-question-desc ncu-ai-textarea" id="ncu-main-q-desc" style="height: 90px; margin-bottom: 6px;" placeholder="（可选）在此输入本大题业务规则，例如促销折扣标准描述，协助 AI 准确对照阅卷..."></textarea>
+          
+          <div class="ncu-image-upload-wrapper" id="ncu-main-q-img-wrapper" style="margin-top: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span class="ncu-ai-label" style="margin-bottom: 0; font-size: 11px;">大题背景题干 (图片/截图):</span>
+                  <span class="ncu-image-toggle" id="ncu-main-image-toggle" title="展开/收缩图片区域" style="display: none; align-items: center; gap: 2px; font-size: 10px; color: #00c6ff; cursor: pointer; user-select: none;">
+                      <span class="toggle-text">添加图片</span>
+                      <svg class="toggle-icon" viewBox="0 0 24 24" width="12" height="12" style="transition: transform 0.2s;">
+                          <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                      </svg>
+                  </span>
+              </div>
+              
+              <div class="ncu-upload-zone" id="ncu-main-upload-zone" tabindex="0" title="点击激活后直接按 Ctrl+V 粘贴，或拖拽图片、点击“选择文件”上传" style="min-height: 60px;">
+                  <div class="ncu-upload-placeholder">
+                      <svg class="ncu-upload-icon" viewBox="0 0 24 24" width="20" height="20" style="margin-bottom: 2px;">
+                          <path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                      </svg>
+                      <div class="ncu-upload-text-main" style="font-size: 11px;">
+                          拖拽大题图片至此，或 <span class="ncu-upload-link" id="ncu-main-upload-link" style="color: #00c6ff; text-decoration: underline; cursor: pointer;">选择文件</span>
+                      </div>
+                      <div class="ncu-upload-text-sub" style="font-size: 9px;">支持直接 Ctrl+V 粘贴</div>
+                  </div>
+                  <input type="file" class="ncu-image-file-input" id="ncu-main-image-file-input" accept="image/*" style="display:none;">
+              </div>
+              
+              <div class="ncu-image-preview-container" id="ncu-main-image-preview-container" style="display:none; max-height: 100px;">
+                  <img class="ncu-image-preview" id="ncu-main-image-preview">
+                  <div class="ncu-image-overlay">
+                      <button class="ncu-image-remove-btn" id="ncu-main-image-remove-btn" title="删除图片">
+                          <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right: 4px;">
+                              <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                          </svg>
+                          <span>删除图片</span>
+                      </button>
+                  </div>
+              </div>
+          </div>
       </div>
       
       <div class="ncu-ai-form-group">
@@ -515,6 +560,231 @@ function ncuInjectGradingPanel() {
             loadSubQuestionsConfig();
         }
     }, 1000);
+}
+
+function ncuSetupMainQuestionImage(container, mainImgData) {
+    const group = container.querySelector('#ncu-main-q-group');
+    if (!group) return;
+
+    group.dataset.image = mainImgData || "";
+
+    const uploadZone = group.querySelector('#ncu-main-upload-zone');
+    const fileInput = group.querySelector('#ncu-main-image-file-input');
+    const previewContainer = group.querySelector('#ncu-main-image-preview-container');
+    const previewImg = group.querySelector('#ncu-main-image-preview');
+    const removeBtn = group.querySelector('#ncu-main-image-remove-btn');
+    const textarea = group.querySelector('#ncu-main-q-desc');
+
+    const toggleBtn = group.querySelector('#ncu-main-textarea-toggle');
+    const toggleText = toggleBtn ? toggleBtn.querySelector('.toggle-text') : null;
+    const toggleIcon = toggleBtn ? toggleBtn.querySelector('.toggle-icon') : null;
+
+    const imageToggleBtn = group.querySelector('#ncu-main-image-toggle');
+    const imageToggleText = imageToggleBtn ? imageToggleBtn.querySelector('.toggle-text') : null;
+    const imageToggleIcon = imageToggleBtn ? imageToggleBtn.querySelector('.toggle-icon') : null;
+
+    const updateTextareaVisibility = (isInitializing = false) => {
+        if (!toggleBtn || !textarea) return;
+        const hasImg = !!group.dataset.image;
+        const hasText = textarea.value.trim() !== "";
+
+        if (!hasImg) {
+            textarea.style.display = 'block';
+            toggleBtn.style.display = 'none';
+        } else {
+            toggleBtn.style.display = 'flex';
+            if (isInitializing) {
+                if (!hasText) {
+                    textarea.style.display = 'none';
+                    toggleText.textContent = '展开';
+                    toggleIcon.style.transform = 'rotate(0deg)';
+                } else {
+                    textarea.style.display = 'block';
+                    toggleText.textContent = '收缩';
+                    toggleIcon.style.transform = 'rotate(180deg)';
+                }
+            }
+        }
+    };
+
+    const updateImageZoneVisibility = (isInitializing = false) => {
+        if (!imageToggleBtn || !uploadZone || !previewContainer) return;
+        const hasImg = !!group.dataset.image;
+        const hasText = textarea.value.trim() !== "";
+
+        if (hasImg) {
+            previewContainer.style.display = 'flex';
+            uploadZone.style.display = 'none';
+            imageToggleBtn.style.display = 'none';
+        } else {
+            previewContainer.style.display = 'none';
+            if (!hasText) {
+                uploadZone.style.display = 'flex';
+                imageToggleBtn.style.display = 'none';
+            } else {
+                imageToggleBtn.style.display = 'flex';
+                if (isInitializing) {
+                    uploadZone.style.display = 'none';
+                    imageToggleText.textContent = '添加图片';
+                    imageToggleIcon.innerHTML = '<path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>';
+                } else {
+                    uploadZone.style.display = 'flex';
+                    imageToggleText.textContent = '收缩';
+                    imageToggleIcon.innerHTML = '<path fill="currentColor" d="M19 13H5v-2h14v2z"/>';
+                }
+            }
+        }
+    };
+
+    if (toggleBtn && textarea) {
+        toggleBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const isHidden = textarea.style.display === 'none';
+            if (isHidden) {
+                textarea.style.display = 'block';
+                toggleText.textContent = '收缩';
+                toggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                textarea.style.display = 'none';
+                toggleText.textContent = '展开';
+                toggleIcon.style.transform = 'rotate(0deg)';
+            }
+        };
+    }
+
+    if (imageToggleBtn && uploadZone) {
+        imageToggleBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const isHidden = uploadZone.style.display === 'none';
+            if (isHidden) {
+                uploadZone.style.display = 'flex';
+                imageToggleText.textContent = '收缩';
+                imageToggleIcon.innerHTML = '<path fill="currentColor" d="M19 13H5v-2h14v2z"/>';
+            } else {
+                uploadZone.style.display = 'none';
+                imageToggleText.textContent = '添加图片';
+                imageToggleIcon.innerHTML = '<path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>';
+            }
+        };
+    }
+
+    const loadMainImgBase64 = (base64Data, shouldSave = true) => {
+        group.dataset.image = base64Data;
+        if (previewImg) previewImg.src = base64Data;
+        if (previewContainer) previewContainer.style.display = 'flex';
+        if (uploadZone) uploadZone.style.display = 'none';
+        if (shouldSave) {
+            ncuSaveConfig();
+        }
+        updateTextareaVisibility(true);
+        updateImageZoneVisibility(false);
+    };
+
+    if (mainImgData) {
+        loadMainImgBase64(mainImgData, false);
+    } else {
+        if (previewContainer) previewContainer.style.display = 'none';
+        if (uploadZone) uploadZone.style.display = 'flex';
+    }
+    updateTextareaVisibility(true);
+    updateImageZoneVisibility(true);
+
+    const uploadLink = group.querySelector('#ncu-main-upload-link');
+    if (uploadLink && fileInput) {
+        uploadLink.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInput.click();
+        };
+    }
+
+    if (uploadZone) {
+        uploadZone.onclick = (e) => {
+            if (e.target === uploadLink || e.target === fileInput) return;
+            e.preventDefault();
+            uploadZone.focus();
+        };
+    }
+
+    if (fileInput) {
+        fileInput.onchange = () => {
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    loadMainImgBase64(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+
+    if (removeBtn) {
+        removeBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            group.dataset.image = "";
+            if (previewImg) previewImg.src = "";
+            if (previewContainer) previewContainer.style.display = 'none';
+            if (uploadZone) uploadZone.style.display = 'flex';
+            if (fileInput) fileInput.value = "";
+            ncuSaveConfig();
+            updateTextareaVisibility(true);
+            updateImageZoneVisibility(false);
+        };
+    }
+
+    if (uploadZone) {
+        uploadZone.ondragover = (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('ncu-dragover');
+        };
+
+        uploadZone.ondragleave = (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('ncu-dragover');
+        };
+
+        uploadZone.ondrop = (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('ncu-dragover');
+            const files = e.dataTransfer.files;
+            if (files && files[0] && files[0].type.startsWith('image/')) {
+                const file = files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    loadMainImgBase64(event.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+
+    group.onpaste = (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    loadMainImgBase64(event.target.result);
+                };
+                reader.readAsDataURL(blob);
+                e.preventDefault();
+                break;
+            }
+        }
+    };
+
+    if (textarea) {
+        textarea.oninput = () => {
+            ncuSaveConfig();
+            updateTextareaVisibility(false);
+            updateImageZoneVisibility(false);
+        };
+    }
 }
 
 function ncuAddSubQuestionElement(container, data) {
@@ -820,14 +1090,18 @@ function ncuSaveConfig() {
 
     const descInput = document.querySelector('#ncu-main-q-desc');
     const mainDesc = descInput ? descInput.value : "";
+    const mainQGroup = document.querySelector('#ncu-main-q-group');
+    const mainImg = mainQGroup ? (mainQGroup.dataset.image || "") : "";
 
     const urlParams = new URLSearchParams(window.location.search);
     const examId = urlParams.get('examId') || 'unknown';
     const key = `ncu_grading_${examId}_${currentQTitle}`;
     const descKey = `ncu_grading_desc_${examId}_${currentQTitle}`;
+    const descImgKey = `ncu_grading_desc_img_${examId}_${currentQTitle}`;
     chrome.storage.local.set({
         [key]: subQuestions,
-        [descKey]: mainDesc
+        [descKey]: mainDesc,
+        [descImgKey]: mainImg
     });
 }
 
@@ -836,15 +1110,19 @@ function loadSubQuestionsConfig() {
     const examId = urlParams.get('examId') || 'unknown';
     const key = `ncu_grading_${examId}_${currentQTitle}`;
     const descKey = `ncu_grading_desc_${examId}_${currentQTitle}`;
-    chrome.storage.local.get([key, descKey], (data) => {
+    const descImgKey = `ncu_grading_desc_img_${examId}_${currentQTitle}`;
+    chrome.storage.local.get([key, descKey, descImgKey], (data) => {
         const hasSavedConfig = data[key] !== undefined;
         const config = hasSavedConfig ? data[key] : ncuGetDefaultConfig();
         const mainDesc = data[descKey] !== undefined ? data[descKey] : (hasSavedConfig ? "" : ncuGetDefaultMainDesc());
+        const mainImg = data[descImgKey] !== undefined ? data[descImgKey] : "";
 
         const descInput = document.querySelector('#ncu-main-q-desc');
         if (descInput) {
             descInput.value = mainDesc;
         }
+
+        ncuSetupMainQuestionImage(document, mainImg);
 
         const list = document.querySelector('#ncu-sub-questions-list');
         if (list) {
@@ -2258,6 +2536,8 @@ async function ncuStartGrading() {
 
         const descInput = document.querySelector('#ncu-main-q-desc');
         const mainQuestionDesc = descInput ? descInput.value.trim() : "";
+        const mainQGroup = document.querySelector('#ncu-main-q-group');
+        const mainQuestionImage = mainQGroup ? (mainQGroup.dataset.image || "") : "";
         const detectedCourse = ncuDetectCourseName();
 
         chrome.runtime.sendMessage({
@@ -2268,6 +2548,7 @@ async function ncuStartGrading() {
                 totalMaxScore: totalMaxScore,
                 subQuestionsText: subQuestionsText,
                 mainQuestionDesc: mainQuestionDesc,
+                mainQuestionImage: mainQuestionImage,
                 courseName: detectedCourse,
                 subQuestions: subQuestions
             }
