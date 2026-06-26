@@ -2559,7 +2559,7 @@ async function ncuStartGrading() {
 
             if (chrome.runtime.lastError || !response || !response.success) {
                 console.error("❌ [AI Marking] Error:", chrome.runtime.lastError || response?.error);
-                alert("智能阅卷失败: " + (response?.error || chrome.runtime.lastError?.message || "通信异常"));
+                ncuShowErrorDialog("智能阅卷失败", response?.error || chrome.runtime.lastError?.message || "通信异常");
                 return;
             }
 
@@ -2606,7 +2606,7 @@ async function ncuStartGrading() {
 
     } catch (e) {
         console.error("Fatal error during NCU AI Grading:", e);
-        alert("阅卷发生错误: " + e.message);
+        ncuShowErrorDialog("阅卷发生错误", e.stack || e.message);
         btn.disabled = false;
         btn.style.background = 'linear-gradient(135deg, #0072ff, #00c6ff)';
         btn.innerText = originalText;
@@ -2843,6 +2843,12 @@ function ncuShowReviewDialog(results, subQuestions, canvas, onConfirm) {
     // 每一个小题对应的 Card
     const cardsData = [];
     results.forEach(result => {
+        if (result.status === undefined) result.status = 'incorrect';
+        if (result.score === undefined) result.score = 0;
+        if (result.comment === undefined) result.comment = 'AI 阅卷未完成部分，请人工核对补全。';
+        if (result.x === undefined) result.x = 50;
+        if (result.y === undefined) result.y = 50;
+
         const sqConfig = subQuestions.find(s => s.id === result.id);
         const maxScore = sqConfig ? sqConfig.maxScore : 5;
         let initialScore = parseFloat(result.score) || 0;
@@ -2950,6 +2956,114 @@ function ncuShowReviewDialog(results, subQuestions, canvas, onConfirm) {
         if (onConfirm) {
             onConfirm(editedResults);
         }
+    };
+}
+
+function ncuShowErrorDialog(title, errorDetail) {
+    ncuInjectReviewDialogStyles();
+    
+    if (!document.getElementById('ncu-error-dialog-styles')) {
+        const style = document.createElement('style');
+        style.id = 'ncu-error-dialog-styles';
+        style.textContent = `
+            .ncu-error-textarea {
+                width: 100%;
+                height: 250px;
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid rgba(255, 77, 79, 0.2);
+                background: rgba(255, 255, 255, 0.9);
+                font-family: Consolas, Monaco, monospace;
+                font-size: 12px;
+                line-height: 1.4;
+                color: #333333;
+                resize: vertical;
+                outline: none;
+                margin-top: 10px;
+            }
+            .ncu-error-btn-copy {
+                background: linear-gradient(135deg, #ff4d4f, #ff7875) !important;
+                color: #ffffff !important;
+                box-shadow: 0 4px 12px rgba(255, 77, 79, 0.2) !important;
+            }
+            .ncu-error-btn-copy:hover {
+                opacity: 0.9;
+                box-shadow: 0 6px 16px rgba(255, 77, 79, 0.3) !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const existing = document.getElementById('ncu-error-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'ncu-error-overlay';
+    overlay.className = 'ncu-review-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'ncu-review-modal';
+    modal.style.width = '600px';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'ncu-review-header';
+    header.style.background = 'linear-gradient(135deg, #ff4d4f, #ff7875)';
+    header.innerHTML = `
+        <span>⚠️ ${title}</span>
+        <button class="ncu-review-close-btn">&times;</button>
+    `;
+    modal.appendChild(header);
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'ncu-review-body';
+    body.innerHTML = `
+        <div style="font-size: 14px; color: #333; font-weight: bold;">
+            批阅发生异常，以下是用于协助开发排查的诊断调试信息：
+        </div>
+        <textarea class="ncu-error-textarea" readonly>${errorDetail}</textarea>
+    `;
+    modal.appendChild(body);
+
+    // Footer
+    const footer = document.createElement('div');
+    footer.className = 'ncu-review-footer';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'ncu-review-btn ncu-error-btn-copy';
+    copyBtn.innerText = '📋 复制诊断信息并关闭';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'ncu-review-btn ncu-review-btn-cancel';
+    closeBtn.innerText = '关闭';
+
+    footer.appendChild(copyBtn);
+    footer.appendChild(closeBtn);
+    modal.appendChild(footer);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    const destroyModal = () => {
+        overlay.remove();
+    };
+
+    header.querySelector('.ncu-review-close-btn').onclick = destroyModal;
+    closeBtn.onclick = destroyModal;
+
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(errorDetail).then(() => {
+            alert('✅ 诊断信息已复制到您的剪贴板！可以直接粘贴发给开发人员。');
+        }).catch(err => {
+            console.error('Failed to copy text:', err);
+            const textarea = modal.querySelector('.ncu-error-textarea');
+            textarea.select();
+            document.execCommand('copy');
+            alert('✅ 诊断信息已选中并复制到您的剪贴板！');
+        }).finally(() => {
+            destroyModal();
+        });
     };
 }
 
