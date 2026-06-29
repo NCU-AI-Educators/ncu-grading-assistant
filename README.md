@@ -20,7 +20,7 @@
 
 ## 配置与连接
 点击插件图标，在弹窗中配置大模型连接参数：
-1. **API Provider**：选择 API 提供商，支持 `OpenAI / vLLM (Compatible)`、`SiliconFlow (硅基流动)`（内置了最新的视觉大模型默认参数）或 `Google Gemini`。
+1. **API Provider**：选择 API 提供商，支持 `OpenAI / vLLM (Compatible)`、[SiliconFlow (硅基流动)](https://cloud.siliconflow.cn/i/uvQthMIy)（内置了最新的视觉大模型默认参数）、`Google Gemini` 或 [阿里云](https://www.aliyun.com/minisite/goods?userCode=so7jhwke)。
 2. **API URL**：填写大模型的 API 端点地址。
 3. **API Key**：填写您的大模型 API 密钥。
 4. **Model Name**：填写调用的 Vision 视觉大模型名称（支持视觉的多模态模型才能处理答卷图片）。
@@ -28,13 +28,20 @@
 6. 点击 **“保存配置”**。
 
 > 🎁 **专属福利**:
-> 如果您尚未注册硅基流动，推荐点击 [专属邀请链接](https://cloud.siliconflow.cn/i/uvQthMIy) 注册，可立享 **16 元** 免费额度（足够免费阅卷数万次）。
+> * **硅基流动**：如果您尚未注册硅基流动，推荐点击 [专属邀请链接](https://cloud.siliconflow.cn/i/uvQthMIy) 注册，可立享 **16 元** 免费额度（足够免费阅卷数万次）。
+> * **阿里云百炼**：推荐通过 [阿里云专属优惠链接](https://www.aliyun.com/minisite/goods?userCode=so7jhwke) 注册，新用户可享 8 折起优惠，且首次开通百炼平台可直接获取 **每个模型 100 万 Tokens（累计超 7000 万 Tokens）** 的免费额度（有效期 90 天，足够试用并阅卷数万次）。
 >
 > 💡 **硅基流动 (SiliconFlow) 平台快捷配置 (推荐使用支持 Vision 视觉能力的 Qwen3.6 MoE 模型)**:
-> * **API Provider**: 选择 `SiliconFlow (硅基流动)`，插件将自动填充默认 API 终点和模型名称：
+> * **API Provider**: 选择 [SiliconFlow (硅基流动)](https://cloud.siliconflow.cn/i/uvQthMIy)，插件将自动填充默认 API 终点和模型名称：
 >   * **API URL**: `https://api.siliconflow.cn/v1/chat/completions`
 >   * **Model Name**: `Qwen/Qwen3.6-35B-A3B` （也可以根据需要修改为其他支持 Vision 的模型）
 > * **API Key**: 填入您的硅基流动 API 密钥 (`sk-...`)
+>
+> 💡 **阿里云百炼 (通义千问) 平台快捷配置**:
+> * **API Provider**: 选择 [阿里云](https://www.aliyun.com/minisite/goods?userCode=so7jhwke)，插件将自动填充默认 API 终点和模型名称：
+>   * **API URL**: `https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions` (请将 `{WorkspaceId}` 替换为您在阿里云百炼控制台中的实际空间 ID)
+>   * **Model Name**: `qwen3.7-plus` (或 `qwen3.6-plus`、`qwen3.6-flash` 等支持视觉能力的多模态模型)
+> * **API Key**: 填入您的百炼/Dashscope API 密钥 (`sk-...`)，对应的环境变量/密钥名称为 `DASHSCOPE_API_KEY`
 
 ## 使用方法
 1. 登录南昌大学在线阅卷系统，进入阅卷评阅页面。

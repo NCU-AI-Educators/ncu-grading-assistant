@@ -19,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
     siliconflow: {
       apiUrl: "https://api.siliconflow.cn/v1/chat/completions",
       modelName: "Qwen/Qwen3.6-35B-A3B"
+    },
+    aliyun: {
+      apiUrl: "https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions",
+      modelName: "qwen3.7-plus"
     }
   };
 
@@ -32,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
       apiKeyInput.placeholder = "填写您的硅基流动 sk-... 密钥";
     } else if (e.target.value === 'gemini') {
       apiKeyInput.placeholder = "填写您的 Gemini API Key";
+    } else if (e.target.value === 'aliyun') {
+      apiKeyInput.placeholder = "填写您的 DASHSCOPE_API_KEY";
     } else {
       apiKeyInput.placeholder = "vllm-local";
     }
@@ -52,6 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
       apiKeyInput.placeholder = "填写您的硅基流动 sk-... 密钥";
     } else if (apiProviderSelect.value === 'gemini') {
       apiKeyInput.placeholder = "填写您的 Gemini API Key";
+    } else if (apiProviderSelect.value === 'aliyun') {
+      apiKeyInput.placeholder = "填写您的 DASHSCOPE_API_KEY";
     } else {
       apiKeyInput.placeholder = "vllm-local";
     }
